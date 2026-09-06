@@ -6,15 +6,15 @@ export const CATALOG = {
   // --- single products: each sells as a 5-pack or 10-pack of the base unit ---
   products: [
     { sku: 'BEAN-ETH', name: 'Ethiopia Roast', unit: '250g bag',
-      variants: [ { label: '5-pack', packQty: 5, price: 60 }, { label: '10-pack', packQty: 10, price: 110 } ] },
+      variants: [ { label: 'Single', packQty: 1, price: 30 }, { label: '5-pack', packQty: 5, price: 60 }, { label: '10-pack', packQty: 10, price: 110 } ] },
     { sku: 'BEAN-COL', name: 'Colombia Roast', unit: '250g bag',
-      variants: [ { label: '5-pack', packQty: 5, price: 55 }, { label: '10-pack', packQty: 10, price: 100 } ] },
+      variants: [ { label: 'Single', packQty: 1, price: 30 }, { label: '5-pack', packQty: 5, price: 55 }, { label: '10-pack', packQty: 10, price: 100 } ] },
     { sku: 'BEAN-SUM', name: 'Sumatra Roast', unit: '250g bag',
-      variants: [ { label: '5-pack', packQty: 5, price: 58 }, { label: '10-pack', packQty: 10, price: 105 } ] },
+      variants: [ { label: 'Single', packQty: 1, price: 30 }, { label: '5-pack', packQty: 5, price: 58 }, { label: '10-pack', packQty: 10, price: 105 } ] },
     { sku: 'BEAN-KEN', name: 'Kenya Roast', unit: '250g bag',
-      variants: [ { label: '5-pack', packQty: 5, price: 62 }, { label: '10-pack', packQty: 10, price: 115 } ] },
+      variants: [ { label: 'Single', packQty: 1, price: 30 }, { label: '5-pack', packQty: 5, price: 62 }, { label: '10-pack', packQty: 10, price: 115 } ] },
     { sku: 'BEAN-GTM', name: 'Guatemala Roast', unit: '250g bag',
-      variants: [ { label: '5-pack', packQty: 5, price: 57 }, { label: '10-pack', packQty: 10, price: 103 } ] }
+      variants: [ { label: 'Single', packQty: 1, price: 30 }, { label: '5-pack', packQty: 5, price: 57 }, { label: '10-pack', packQty: 10, price: 103 } ] }
   ],
 
   // --- kits: a single line item, qty 1..10, that consumes component SKUs from stock ---
