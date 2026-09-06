@@ -34,14 +34,13 @@
   .prod-info{min-width:0;flex-shrink:1}
   .prod-name{font-weight:600;font-size:15px}
   .prod-unit{font-size:12px;color:var(--muted)}
-  .packs{display:flex;gap:14px;align-items:center;flex-shrink:0}
-  .pack{display:flex;align-items:center;gap:6px}
-  .pack label{margin:0;font-weight:500;font-size:12px;color:var(--ink);white-space:nowrap}
-  .packlbl{font-size:12px;font-weight:500;line-height:1.15;white-space:nowrap;color:var(--ink)}
-  .packlbl .price{font-weight:400;color:var(--muted)}
-  .pack .price{font-size:11px;color:var(--muted)}
-  .qsel{padding:6px 8px;border:1px solid var(--line);border-radius:var(--radius);
-    font:inherit;font-size:14px;background:#fff;width:52px}
+  .packs{display:flex;gap:10px;align-items:center;flex-shrink:0}
+  .pack{display:flex;align-items:center}
+  .sizesel,.qtysel,.kitsel{padding:8px 8px;border:1px solid var(--line);border-radius:var(--radius);
+    font:inherit;font-size:14px;background:#fff}
+  .sizesel{min-width:120px}
+  .qtysel{min-width:56px}
+  .kitsel{min-width:96px}
   .prod.kit{background:#f6f1e9}
   .prod-sub{font-size:12px;color:var(--accent);font-weight:600;margin-top:2px;min-height:0}
   .prod-sub:empty{display:none}
@@ -58,16 +57,16 @@
   @media (max-width:560px){
     .pay{grid-template-columns:1fr 1fr}
     .catalog{gap:6px}
-    /* name on its own line up top; dropdowns full-width row beneath, each wide enough for the text */
+    /* name on its own line; size + qty dropdowns on a row beneath */
     .prod{flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px}
     .prod-info{min-width:0}
     .prod-name{font-size:15px;line-height:1.2}
-    .prod-unit{display:none}
     .prod-sub{display:block;font-size:12px;margin-top:2px}
-    .packs{gap:10px;display:flex}
-    .pack{flex:1;min-width:0;display:block}
-    .qsel{width:100%;min-width:0;padding:8px 8px;font-size:13px}
-    .packlbl{display:none}
+    .packs{gap:8px}
+    .pack:first-child{flex:1;min-width:0}
+    .sizesel{width:100%;min-width:0}
+    .qtysel{width:72px;min-width:0}
+    .kitsel{width:100%;min-width:0}
     .wrap{padding:24px 14px 80px}
     h1{font-size:28px}
   }
@@ -171,33 +170,40 @@ function qtyOptions(max){
 
 // Options for a product pack: index 0 shows the pack label + unit price;
 // each quantity shows the line price so it's visible inside the select.
-function packOptions(label, price, max){
-  const short = label.replace('-pack','pk');
-  let o = `<option value="0">${short} · $${price}</option>`;
-  for(let i=1;i<=max;i++) o += `<option value="${i}">${i} · $${price*i}</option>`;
+// Size dropdown: one option per variant, showing label + unit price. Default = first (Single).
+function sizeOptions(variants){
+  return variants.map((v,i) => `<option value="${v.label}" data-price="${v.price}">${v.label} · $${v.price}</option>`).join('');
+}
+// Quantity dropdown: 1..max.
+function qtyOptions(max){
+  let o = '';
+  for(let i=1;i<=max;i++) o += `<option value="${i}">${i}</option>`;
   return o;
 }
+// Kit quantity dropdown: 1..max with price shown.
 function kitOptions(price, max){
-  let o = `<option value="0">Kit · $${price}</option>`;
+  let o = '';
   for(let i=1;i<=max;i++) o += `<option value="${i}">${i} · $${price*i}</option>`;
   return o;
 }
 
-// Render the whole catalog: each product with a 0..10 dropdown per pack variant,
-// each kit with a single 0..maxQty dropdown. Nothing selected by default.
+// Each product: a size dropdown (Single/5-pack/10-pack) + a quantity dropdown (1..10).
+// Kits: a single quantity dropdown. Products default to Single × 1 but aren't counted
+// until the customer changes something — see collectLines/activated tracking below.
 function renderCatalog(){
   const prodHtml = CATALOG.products.map(p => `
     <div class="prod">
       <div class="prod-info">
         <div class="prod-name">${p.name}</div>
-        <div class="prod-unit">${p.unit}</div>
         <div class="prod-sub" data-amt="${p.sku}"></div>
       </div>
       <div class="packs">
-        ${p.variants.map(v => `
-          <div class="pack">
-            <select class="qsel" data-type="product" data-sku="${p.sku}" data-variant="${v.label}">${packOptions(v.label, v.price, 10)}</select>
-          </div>`).join('')}
+        <div class="pack">
+          <select class="sizesel" data-sku="${p.sku}">${sizeOptions(p.variants)}</select>
+        </div>
+        <div class="pack">
+          <select class="qtysel" data-sku="${p.sku}">${qtyOptions(10)}</select>
+        </div>
       </div>
     </div>`).join('');
 
@@ -205,30 +211,46 @@ function renderCatalog(){
     <div class="prod kit">
       <div class="prod-info">
         <div class="prod-name">${k.name}</div>
-        <div class="prod-unit">Kit · $${k.price} each</div>
         <div class="prod-sub" data-amt="${k.sku}"></div>
       </div>
       <div class="packs">
         <div class="pack">
-          <select class="qsel" data-type="kit" data-sku="${k.sku}">${kitOptions(k.price, k.maxQty)}</select>
+          <select class="kitsel" data-sku="${k.sku}">${kitOptions(k.price, k.maxQty)}</select>
         </div>
       </div>
     </div>`).join('');
 
   catalogEl.innerHTML = prodHtml + kitHtml;
-  catalogEl.querySelectorAll('.qsel').forEach(s => s.addEventListener('change', recalc));
+  // A product line counts only once the customer interacts with either of its dropdowns,
+  // so the default Single×1 doesn't silently add every product to the order.
+  catalogEl.querySelectorAll('.sizesel, .qtysel').forEach(s => {
+    s.addEventListener('change', () => {
+      const row = s.closest('.prod');
+      row.dataset.active = '1';
+      recalc();
+    });
+  });
+  catalogEl.querySelectorAll('.kitsel').forEach(s => {
+    s.addEventListener('change', () => { s.closest('.prod').dataset.active = '1'; recalc(); });
+  });
 }
 
-// Read every dropdown with qty > 0 into order lines.
+// Build order lines: products the customer has activated, plus any kit with a chosen qty.
 function collectLines(){
   const lines = [];
-  catalogEl.querySelectorAll('.qsel').forEach(s => {
-    const qty = parseInt(s.value) || 0;
-    if(qty < 1) return;
-    if(s.dataset.type === 'product'){
-      lines.push({ type:'product', sku:s.dataset.sku, variant:s.dataset.variant, qty });
-    } else {
-      lines.push({ type:'kit', sku:s.dataset.sku, qty });
+  catalogEl.querySelectorAll('.prod').forEach(row => {
+    if(row.dataset.active !== '1') return;
+    const size = row.querySelector('.sizesel');
+    const qtyEl = row.querySelector('.qtysel');
+    const kitEl = row.querySelector('.kitsel');
+    if(size && qtyEl){
+      const qty = parseInt(qtyEl.value) || 0;
+      if(qty < 1) return;
+      lines.push({ type:'product', sku:size.dataset.sku, variant:size.value, qty });
+    } else if(kitEl){
+      const qty = parseInt(kitEl.value) || 0;
+      if(qty < 1) return;
+      lines.push({ type:'kit', sku:kitEl.dataset.sku, qty });
     }
   });
   return lines;
