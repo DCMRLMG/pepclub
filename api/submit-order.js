@@ -74,8 +74,50 @@ export default async function handler(req, res){
     const invoiceUrl = `${base}/api/invoice?id=${order.id}`;
     await supabase.from('orders').update({ invoice_url: invoiceUrl }).eq('id', order.id);
 
+    // --- best-effort Discord alert to the business (never blocks the order) ---
+    await notifyBusiness({ order, repObj, name, serverTotal, paymentMethod, invoiceNumber, lines, invoiceUrl });
+
     return res.status(200).json({ ok:true, invoiceNumber, invoiceUrl });
   }catch(err){
     return res.status(500).json({ error: err.message });
+  }
+}
+
+// Sends a new-order SMS to the rep the order was directed to, via Twilio's REST API.
+// Requires env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER, and a
+// per-rep destination number: REP_SMS_DENNIS / REP_SMS_RYAN / REP_SMS_MIKE (E.164, e.g. +12085551234).
+// If credentials or this rep's number are missing, or the send fails, it logs and returns
+// quietly — the order still succeeds.
+async function notifyBusiness({ order, repObj, name, serverTotal, paymentMethod, invoiceNumber, lines, invoiceUrl }){
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_FROM_NUMBER;
+  // pick the destination number for THIS order's rep, e.g. REP_SMS_DENNIS
+  const to = process.env['REP_SMS_' + repObj.id.toUpperCase()];
+  if(!sid || !token || !from){ console.error('Twilio not configured'); return; }
+  if(!to){ console.error('No SMS number set for rep:', repObj.id); return; }
+
+  const itemList = lines.map(l => {
+    const label = l.type === 'kit' ? `${l.name} (kit)` : `${l.name} ${l.variant}`;
+    return `${label} x${l.qty}`;
+  }).join('; ');
+
+  const body =
+    `New order ${invoiceNumber} (${repObj.name})\n` +
+    `${name}\n${itemList}\n` +
+    `$${serverTotal.toFixed(2)} · ${paymentMethod}\n${invoiceUrl}`;
+
+  try{
+    const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({ To: to, From: from, Body: body }).toString()
+    });
+    if(!resp.ok){ console.error('Twilio SMS failed:', resp.status, await resp.text()); }
+  }catch(e){
+    console.error('Twilio SMS error:', e.message);
   }
 }
