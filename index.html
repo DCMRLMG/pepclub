@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Place an Order</title>
+<style>
+  :root{--ink:#141b1e;--paper:#faf7f2;--line:#d8cfc2;--accent:#1f6f5c;
+    --accent-2:#c24d2c;--muted:#6b6459;--field:#ffffff;--radius:2px;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:560px;margin:0 auto;padding:48px 24px 96px}
+  .eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+  h1{font-size:34px;line-height:1.1;margin:0 0 8px;font-weight:600}
+  .lede{color:var(--muted);margin:0 0 36px;font-size:16px}
+  .rule{height:1px;background:var(--line);border:0;margin:28px 0}
+  label{display:block;font-size:13px;letter-spacing:.02em;margin:0 0 6px;font-weight:600}
+  .hint{font-size:12px;color:var(--muted);margin:2px 0 0}
+  input,select,textarea{width:100%;padding:12px 14px;background:var(--field);border:1px solid var(--line);
+    border-radius:var(--radius);font:inherit;font-size:15px;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+  .field{margin-bottom:20px}
+  .pay{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pay label.opt{display:flex;align-items:center;gap:10px;padding:14px;border:1px solid var(--line);
+    border-radius:var(--radius);cursor:pointer;font-weight:500;margin:0;background:#fff}
+  .pay input[type=radio]{width:auto;margin:0}
+  .pay label.opt:has(input:checked){border-color:var(--accent);outline:2px solid var(--accent);outline-offset:-1px}
+  .venmo-field{margin-top:12px;display:none}
+  .catalog{display:flex;flex-direction:column;gap:10px}
+  .prod{border:1px solid var(--line);border-radius:var(--radius);background:#fff;padding:10px 16px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .prod-info{min-width:0;flex-shrink:1}
+  .prod-name{font-weight:600;font-size:15px}
+  .prod-unit{font-size:12px;color:var(--muted)}
+  .packs{display:flex;gap:14px;align-items:center;flex-shrink:0}
+  .pack{display:flex;align-items:center;gap:6px}
+  .pack label{margin:0;font-weight:500;font-size:12px;color:var(--ink);white-space:nowrap}
+  .packlbl{font-size:12px;font-weight:500;line-height:1.15;white-space:nowrap;color:var(--ink)}
+  .packlbl .price{font-weight:400;color:var(--muted)}
+  .pack .price{font-size:11px;color:var(--muted)}
+  .qsel{padding:6px 8px;border:1px solid var(--line);border-radius:var(--radius);
+    font:inherit;font-size:14px;background:#fff;width:52px}
+  .prod.kit{background:#f6f1e9}
+  .prod-sub{font-size:12px;color:var(--accent);font-weight:600;margin-top:2px;min-height:0}
+  .prod-sub:empty{display:none}
+  .total{display:flex;justify-content:space-between;align-items:baseline;margin-top:20px;
+    padding-top:16px;border-top:2px solid var(--ink)}
+  .total .amt{font-size:26px;font-weight:600}
+  .send{width:100%;margin-top:28px;padding:16px;background:var(--accent);color:#fff;border:0;
+    border-radius:var(--radius);font:inherit;font-size:16px;font-weight:600;letter-spacing:.02em;cursor:pointer}
+  .send:hover{background:#185849}.send:disabled{opacity:.5;cursor:not-allowed}
+  .note{font-size:12px;color:var(--muted);text-align:center;margin-top:14px}
+  .status{margin-top:20px;padding:14px;border-radius:var(--radius);font-size:14px;display:none}
+  .status.ok{display:block;background:#eaf3ef;border:1px solid var(--accent);color:#124a3d}
+  .status.err{display:block;background:#f7ece8;border:1px solid var(--accent-2);color:#7c2d17}
+  @media (max-width:560px){
+    .pay{grid-template-columns:1fr 1fr}
+    .catalog{gap:6px}
+    /* name flush left; both price-bearing dropdowns side by side on the right */
+    .prod{flex-direction:row;align-items:center;gap:12px;padding:9px 10px}
+    .prod-info{flex:0 1 auto;min-width:0}
+    .prod-name{font-size:13px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .prod-unit{display:none}
+    .prod-sub{display:none}
+    .packs{gap:6px;flex:1;min-width:0}
+    .pack{flex:1;min-width:0;display:block}
+    .qsel{width:100%;min-width:0;padding:6px 2px 6px 6px;font-size:11px;
+      text-overflow:ellipsis}
+    .packlbl{display:none}
+    .wrap{padding:24px 14px 80px}
+    h1{font-size:28px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow" id="repEyebrow">Order intake</p>
+  <h1>Place an order</h1>
+  <p class="lede">Choose your items and enter your details. We'll text you a confirmation and a link to your invoice.</p>
+  <div id="repError" style="display:none;padding:14px;background:#f7ece8;border:1px solid #c24d2c;border-radius:2px;color:#7c2d17;font-size:14px;margin-bottom:24px"></div>
+
+  <div class="field">
+    <label for="name">Name</label>
+    <input id="name" type="text" autocomplete="name" placeholder="Full name" />
+  </div>
+  <div class="field">
+    <label for="phone">Mobile number</label>
+    <input id="phone" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" />
+    <p class="hint">Used for the SMS confirmation and invoice link.</p>
+  </div>
+
+  <div class="field">
+    <label>Payment method</label>
+    <div class="pay">
+      <label class="opt"><input type="radio" name="pay" value="cash" checked /> Cash</label>
+      <label class="opt"><input type="radio" name="pay" value="venmo" /> Venmo</label>
+    </div>
+    <div class="venmo-field field" id="venmoField">
+      <label for="venmo" style="margin-top:12px">Your Venmo username</label>
+      <input id="venmo" type="text" placeholder="@your-handle" />
+    </div>
+  </div>
+
+  <hr class="rule" />
+  <label>Products</label>
+  <p class="hint" style="margin-bottom:12px">Set a quantity for anything you'd like. Leave at 0 to skip. Roasts are 250g bags.</p>
+  <div class="catalog" id="catalog"></div>
+
+  <div class="total"><span>Total</span><span class="amt" id="total">$0.00</span></div>
+
+  <div class="field" style="margin-top:24px">
+    <label for="notes">Notes (optional)</label>
+    <textarea id="notes" rows="2" placeholder="Delivery instructions, etc."></textarea>
+  </div>
+
+  <button class="send" id="send" type="button">Send order</button>
+  <p class="note">Your order will be reviewed and an invoice sent to you.</p>
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+// --- Catalog is loaded from /api/catalog (single source of truth: catalog.js) ---
+// Reps are a tiny fixed list, kept inline.
+let CATALOG = { products: [], kits: [] };
+function findProduct(sku){ return CATALOG.products.find(p => p.sku === sku); }
+function findKit(sku){ return CATALOG.kits.find(k => k.sku === sku); }
+function linePrice(line){
+  if(line.type === 'product'){
+    const v = findProduct(line.sku)?.variants.find(v => v.label === line.variant);
+    return v ? v.price * line.qty : 0;
+  }
+  if(line.type === 'kit'){ const k = findKit(line.sku); return k ? k.price * line.qty : 0; }
+  return 0;
+}
+const REPS = { dennis:{id:'dennis',name:'Dennis'}, ryan:{id:'ryan',name:'Ryan'}, mike:{id:'mike',name:'Mike'} };
+function findRep(id){ return REPS[String(id||'').toLowerCase()] || null; }
+
+// Resolve which rep this order is directed to, from ?rep= or the path (/dennis).
+function resolveRep(){
+  const q = new URLSearchParams(location.search).get('rep');
+  const fromPath = location.pathname.replace(/^\/+|\/+$/g,'').split('/').pop();
+  return findRep(q) || findRep(fromPath);
+}
+const REP = resolveRep();
+const sendBtnRef = document.getElementById('send');
+if(REP){
+  document.getElementById('repEyebrow').textContent = 'Order intake · ' + REP.name;
+} else {
+  const err = document.getElementById('repError');
+  err.style.display = 'block';
+  err.textContent = 'No rep specified. Use a link like /?rep=dennis (dennis, ryan, or mike).';
+  sendBtnRef.disabled = true;
+}
+
+const catalogEl = document.getElementById('catalog');
+const totalEl = document.getElementById('total');
+const venmoField = document.getElementById('venmoField');
+
+document.querySelectorAll('input[name="pay"]').forEach(r =>
+  r.addEventListener('change', () => {
+    venmoField.style.display = document.querySelector('input[name="pay"]:checked').value === 'venmo' ? 'block' : 'none';
+  }));
+
+// quantity <select> from 0..max (0 = default, not ordered)
+function qtyOptions(max){
+  let o = '';
+  for(let i=0;i<=max;i++) o += `<option value="${i}">${i}</option>`;
+  return o;
+}
+
+// Options for a product pack: index 0 shows the pack label + unit price;
+// each quantity shows the line price so it's visible inside the select.
+function packOptions(label, price, max){
+  const short = label.replace('-pack','pk');
+  let o = `<option value="0">${short} · $${price}</option>`;
+  for(let i=1;i<=max;i++) o += `<option value="${i}">${i} · $${price*i}</option>`;
+  return o;
+}
+function kitOptions(price, max){
+  let o = `<option value="0">Kit · $${price}</option>`;
+  for(let i=1;i<=max;i++) o += `<option value="${i}">${i} · $${price*i}</option>`;
+  return o;
+}
+
+// Render the whole catalog: each product with a 0..10 dropdown per pack variant,
+// each kit with a single 0..maxQty dropdown. Nothing selected by default.
+function renderCatalog(){
+  const prodHtml = CATALOG.products.map(p => `
+    <div class="prod">
+      <div class="prod-info">
+        <div class="prod-name">${p.name}</div>
+        <div class="prod-unit">${p.unit}</div>
+        <div class="prod-sub" data-amt="${p.sku}"></div>
+      </div>
+      <div class="packs">
+        ${p.variants.map(v => `
+          <div class="pack">
+            <select class="qsel" data-type="product" data-sku="${p.sku}" data-variant="${v.label}">${packOptions(v.label, v.price, 10)}</select>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  const kitHtml = CATALOG.kits.map(k => `
+    <div class="prod kit">
+      <div class="prod-info">
+        <div class="prod-name">${k.name}</div>
+        <div class="prod-unit">Kit · $${k.price} each</div>
+        <div class="prod-sub" data-amt="${k.sku}"></div>
+      </div>
+      <div class="packs">
+        <div class="pack">
+          <select class="qsel" data-type="kit" data-sku="${k.sku}">${kitOptions(k.price, k.maxQty)}</select>
+        </div>
+      </div>
+    </div>`).join('');
+
+  catalogEl.innerHTML = prodHtml + kitHtml;
+  catalogEl.querySelectorAll('.qsel').forEach(s => s.addEventListener('change', recalc));
+}
+
+// Read every dropdown with qty > 0 into order lines.
+function collectLines(){
+  const lines = [];
+  catalogEl.querySelectorAll('.qsel').forEach(s => {
+    const qty = parseInt(s.value) || 0;
+    if(qty < 1) return;
+    if(s.dataset.type === 'product'){
+      lines.push({ type:'product', sku:s.dataset.sku, variant:s.dataset.variant, qty });
+    } else {
+      lines.push({ type:'kit', sku:s.dataset.sku, qty });
+    }
+  });
+  return lines;
+}
+
+function recalc(){
+  // clear per-line amounts, then fill for selected
+  catalogEl.querySelectorAll('.prod-sub').forEach(el => el.textContent = '');
+  let total = 0;
+  const perSku = {};
+  collectLines().forEach(l => {
+    const amt = linePrice(l);
+    total += amt;
+    perSku[l.sku] = (perSku[l.sku] || 0) + amt;
+  });
+  for(const sku in perSku){
+    const el = catalogEl.querySelector(`.prod-sub[data-amt="${sku}"]`);
+    if(el) el.textContent = 'Subtotal: $' + perSku[sku].toFixed(2);
+  }
+  totalEl.textContent = '$' + total.toFixed(2);
+  return total;
+}
+
+// Load the catalog from the single source, then render the form.
+async function loadCatalog(){
+  try{
+    const res = await fetch('/api/catalog');
+    if(!res.ok) throw new Error('catalog fetch failed');
+    CATALOG = await res.json();
+    renderCatalog();
+    recalc();
+  }catch(err){
+    catalogEl.innerHTML = '<p style="color:#7c2d17;padding:12px">Could not load products. Please refresh.</p>';
+  }
+}
+loadCatalog();
+
+const statusEl = document.getElementById('status');
+function show(msg, ok){ statusEl.className = 'status ' + (ok?'ok':'err'); statusEl.textContent = msg; }
+
+document.getElementById('send').onclick = async (e) => {
+  const btn = e.target;
+  const method = document.querySelector('input[name="pay"]:checked').value;
+  const payload = {
+    rep: REP ? REP.id : null,
+    name: document.getElementById('name').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    paymentMethod: method,
+    venmoHandle: method === 'venmo' ? document.getElementById('venmo').value.trim() : null,
+    notes: document.getElementById('notes').value.trim(),
+    items: collectLines()
+  };
+  if(!payload.name || !payload.phone){ show('Please add your name and phone.', false); return; }
+  if(method === 'venmo' && !payload.venmoHandle){ show('Please add your Venmo username.', false); return; }
+  if(payload.items.length === 0){ show('Add at least one item.', false); return; }
+
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try{
+    const res = await fetch('/api/submit-order', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Something went wrong.');
+    show('Order received! Your invoice number is ' + data.invoiceNumber + '. You\'ll be sent your invoice link shortly.', true);
+    btn.textContent = 'Sent';
+  }catch(err){
+    show(err.message, false);
+    btn.disabled = false; btn.textContent = 'Send order';
+  }
+};
+</script>
+</body>
+</html>

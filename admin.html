@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Order Management</title>
+<style>
+  :root{--ink:#141b1e;--paper:#faf7f2;--line:#d8cfc2;--accent:#1f6f5c;--accent-2:#c24d2c;--muted:#6b6459}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Iowan Old Style",Georgia,serif;line-height:1.5}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
+  .eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  h1{font-size:28px;margin:0 0 24px;font-weight:600}
+  .gate{max-width:360px;margin:80px auto;text-align:center}
+  .gate input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:2px;font:inherit;font-size:15px;margin:12px 0}
+  button{font:inherit;cursor:pointer;border-radius:2px}
+  .primary{background:var(--accent);color:#fff;border:0;padding:12px 20px;font-weight:600}
+  .primary:hover{background:#185849}
+  .filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+  .filters select{padding:9px 12px;border:1px solid var(--line);border-radius:2px;font:inherit;background:#fff}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+  th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+    padding:12px;border-bottom:1px solid var(--line);background:#f6f1e9}
+  td{padding:12px;border-bottom:1px solid #efe9e0;font-size:14px;vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  .pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;
+    font-family:ui-monospace,Menlo,monospace;text-transform:uppercase;letter-spacing:.04em}
+  .pending{background:#f4ede0;color:#8a6d1f}
+  .paid{background:#e6f0ea;color:#1f6f5c}
+  .fulfilled{background:#e7ecf7;color:#2c4a86}
+  .closed{background:#ece9e4;color:#5a544a}
+  .rep{font-weight:600}
+  .items-cell{font-size:13px;color:var(--muted)}
+  .status-sel{padding:6px 8px;border:1px solid var(--line);border-radius:2px;font:inherit;font-size:13px;background:#fff}
+  .muted{color:var(--muted);font-size:13px}
+  .err{color:var(--accent-2);font-size:14px;margin-top:8px}
+  .summary{display:flex;gap:24px;margin-bottom:20px;flex-wrap:wrap}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:2px;padding:12px 18px}
+  .stat .n{font-size:22px;font-weight:600}
+  .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="gate" class="gate">
+    <p class="eyebrow">Order management</p>
+    <h1>Enter password</h1>
+    <input id="pw" type="password" placeholder="Admin password" />
+    <button class="primary" id="login" style="width:100%">Sign in</button>
+    <p class="err" id="gateErr"></p>
+  </div>
+
+  <div id="app" style="display:none">
+    <p class="eyebrow">Order management</p>
+    <h1>Orders</h1>
+    <div class="summary" id="summary"></div>
+    <div class="filters">
+      <select id="fRep">
+        <option value="">All reps</option>
+        <option value="dennis">Dennis</option>
+        <option value="ryan">Ryan</option>
+        <option value="mike">Mike</option>
+      </select>
+      <select id="fStatus">
+        <option value="">All statuses</option>
+        <option value="pending">Pending</option>
+        <option value="paid">Paid</option>
+        <option value="fulfilled">Fulfilled</option>
+        <option value="closed">Closed</option>
+      </select>
+      <button class="primary" id="refresh">Refresh</button>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Invoice</th><th>Rep</th><th>Customer</th><th>Items</th>
+        <th>Total</th><th>Pay</th><th>Status</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="err" id="appErr"></p>
+  </div>
+</div>
+
+<script>
+let TOKEN = '';
+const $ = id => document.getElementById(id);
+
+async function api(method, body){
+  const opts = { method, headers: { 'x-admin-token': TOKEN } };
+  let url = '/api/admin-orders';
+  if(method === 'GET'){
+    const p = new URLSearchParams();
+    if($('fRep').value) p.set('rep', $('fRep').value);
+    if($('fStatus').value) p.set('status', $('fStatus').value);
+    url += '?' + p.toString();
+  } else {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  if(res.status === 401) throw new Error('Unauthorized');
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.error || 'Error');
+  return data;
+}
+
+function money(n){ return '$' + Number(n).toFixed(2); }
+function itemLabel(i){ return i.type === 'kit' ? `${i.name} (kit) ×${i.qty}` : `${i.name} ${i.variant} ×${i.qty}`; }
+
+function render(orders){
+  const rows = $('rows');
+  rows.innerHTML = orders.map(o => `
+    <tr>
+      <td><strong>${o.invoice_number}</strong><br><span class="muted">${new Date(o.created_at).toLocaleDateString()}</span></td>
+      <td class="rep">${o.rep}</td>
+      <td>${o.customer_name}<br><span class="muted">${o.phone}</span></td>
+      <td class="items-cell">${(o.items||[]).map(itemLabel).join('<br>')}</td>
+      <td>${money(o.total)}</td>
+      <td>${o.payment_method}${o.venmo_handle ? '<br><span class="muted">'+o.venmo_handle+'</span>' : ''}</td>
+      <td>
+        <span class="pill ${o.status}">${o.status}</span><br>
+        <select class="status-sel" data-id="${o.id}" style="margin-top:6px">
+          <option value="pending"${o.status==='pending'?' selected':''}>pending</option>
+          <option value="paid"${o.status==='paid'?' selected':''}>paid</option>
+          <option value="fulfilled"${o.status==='fulfilled'?' selected':''}>fulfilled</option>
+          <option value="closed"${o.status==='closed'?' selected':''}>closed</option>
+        </select>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" class="muted" style="text-align:center;padding:32px">No orders.</td></tr>';
+
+  rows.querySelectorAll('.status-sel').forEach(sel => {
+    sel.onchange = async () => {
+      try{ await api('PATCH', { id: Number(sel.dataset.id), status: sel.value }); load(); }
+      catch(e){ $('appErr').textContent = e.message; }
+    };
+  });
+
+  const counts = { pending:0, paid:0, fulfilled:0, closed:0 };
+  orders.forEach(o => counts[o.status] !== undefined && counts[o.status]++);
+  const revenue = orders.filter(o=>o.status!=='pending').reduce((s,o)=>s+Number(o.total),0);
+  $('summary').innerHTML = `
+    <div class="stat"><div class="n">${orders.length}</div><div class="l">Orders</div></div>
+    <div class="stat"><div class="n">${counts.pending}</div><div class="l">Pending</div></div>
+    <div class="stat"><div class="n">${counts.paid}</div><div class="l">Paid</div></div>
+    <div class="stat"><div class="n">${counts.fulfilled}</div><div class="l">Fulfilled</div></div>
+    <div class="stat"><div class="n">${counts.closed}</div><div class="l">Closed</div></div>
+    <div class="stat"><div class="n">${money(revenue)}</div><div class="l">Paid+ revenue</div></div>`;
+}
+
+async function load(){
+  try{ const { orders } = await api('GET'); render(orders); $('appErr').textContent=''; }
+  catch(e){ $('appErr').textContent = e.message; }
+}
+
+$('login').onclick = async () => {
+  TOKEN = $('pw').value;
+  try{
+    await api('GET');
+    $('gate').style.display='none'; $('app').style.display='block';
+    load();
+  }catch(e){ $('gateErr').textContent = 'Incorrect password.'; }
+};
+$('pw').addEventListener('keydown', e => { if(e.key==='Enter') $('login').click(); });
+$('refresh').onclick = load;
+$('fRep').onchange = load;
+$('fStatus').onchange = load;
+</script>
+</body>
+</html>
