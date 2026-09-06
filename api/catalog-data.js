@@ -5,24 +5,22 @@
 export const CATALOG = {
   // --- single products: each sells as a 5-pack or 10-pack of the base unit ---
   products: [
-    { sku: 'BEAN-ETH', name: 'Ethiopia Roast', unit: '250g bag',
-      variants: [ { label: 'Single', packQty: 1, price: 30 }, { label: '5-pack', packQty: 5, price: 60 }, { label: '10-pack', packQty: 10, price: 110 } ] },
-    { sku: 'BEAN-COL', name: 'Colombia Roast', unit: '250g bag',
-      variants: [ { label: 'Single', packQty: 1, price: 30 }, { label: '5-pack', packQty: 5, price: 55 }, { label: '10-pack', packQty: 10, price: 100 } ] },
-    { sku: 'BEAN-SUM', name: 'Sumatra Roast', unit: '250g bag',
-      variants: [ { label: 'Single', packQty: 1, price: 30 }, { label: '5-pack', packQty: 5, price: 58 }, { label: '10-pack', packQty: 10, price: 105 } ] },
-    { sku: 'BEAN-KEN', name: 'Kenya Roast', unit: '250g bag',
-      variants: [ { label: 'Single', packQty: 1, price: 30 }, { label: '5-pack', packQty: 5, price: 62 }, { label: '10-pack', packQty: 10, price: 115 } ] },
-    { sku: 'BEAN-GTM', name: 'Guatemala Roast', unit: '250g bag',
-      variants: [ { label: 'Single', packQty: 1, price: 30 }, { label: '5-pack', packQty: 5, price: 57 }, { label: '10-pack', packQty: 10, price: 103 } ] }
+    { sku: 'BEAN-ETH', name: 'Retatrutide', unit: '3ml Vial',
+      variants: [ { label: 'Single', packQty: 1, price: 300 }, { label: '5-pack', packQty: 5, price: 1400 }, { label: '10-pack', packQty: 10, price: 2500 } ] },
+    { sku: 'BEAN-COL', name: 'BPC-157', unit: '1ml Vial',
+      variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] },
+    { sku: 'BEAN-SUM', name: 'TB-500', unit: '1ml Vial',
+      variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] },
+    { sku: 'BEAN-KEN', name: 'KPV', unit: '1ml Vial',
+      variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] }
   ],
 
   // --- kits: a single line item, qty 1..10, that consumes component SKUs from stock ---
   kits: [
-    { sku: 'KIT-1', name: 'Sampler Kit 1', price: 95, maxQty: 10,
-      components: [ { sku: 'BEAN-ETH', qty: 2 }, { sku: 'BEAN-COL', qty: 2 }, { sku: 'BEAN-SUM', qty: 2 }, { sku: 'BEAN-KEN', qty: 1 } ] },
-    { sku: 'KIT-2', name: 'Sampler Kit 2', price: 95, maxQty: 10,
-      components: [ { sku: 'BEAN-ETH', qty: 2 }, { sku: 'BEAN-COL', qty: 2 }, { sku: 'BEAN-SUM', qty: 2 }, { sku: 'BEAN-GTM', qty: 1 } ] }
+    { sku: 'KIT-1', name: 'Sampler Kit 1: 1x Retatrutide (3ml), 2x BPC-157 (1ml), 2x TB-500 (1ml), 1x KPV', price: 420, maxQty: 1,
+      components: [ { sku: 'BEAN-ETH', qty: 1 }, { sku: 'BEAN-COL', qty: 2 }, { sku: 'BEAN-SUM', qty: 2 }, { sku: 'BEAN-KEN', qty: 1 } ] },
+    { sku: 'KIT-2', name: 'Sampler Kit 2: 1x Retatrutide (3ml), 2x BPC-157 (1ml), 2x TB-500 (1ml)', price: 395, maxQty: 1,
+      components: [ { sku: 'BEAN-ETH', qty: 1 }, { sku: 'BEAN-COL', qty: 2 }, { sku: 'BEAN-SUM', qty: 2 } ] }
   ]
 };
 
