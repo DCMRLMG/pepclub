@@ -115,7 +115,11 @@ function render(orders){
     <tr>
       <td><strong>${o.invoice_number}</strong><br><span class="muted">${new Date(o.created_at).toLocaleDateString()}</span></td>
       <td class="rep">${o.rep}</td>
-      <td>${o.customer_name}<br><span class="muted">${o.phone}</span></td>
+      <td>${o.customer_name}<br><span class="muted">${o.phone}</span>${
+        o.fulfillment === 'delivery'
+          ? '<br><span class="muted">🚚 ' + [o.address, o.city, o.state, o.zip].filter(Boolean).join(', ') + '</span>'
+          : '<br><span class="muted">Pick-up</span>'
+      }</td>
       <td class="items-cell">${(o.items||[]).map(itemLabel).join('<br>')}</td>
       <td>${money(o.total)}</td>
       <td>${o.payment_method}${o.venmo_handle ? '<br><span class="muted">'+o.venmo_handle+'</span>' : ''}</td>

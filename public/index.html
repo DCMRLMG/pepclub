@@ -28,6 +28,7 @@
   .pay input[type=radio]{width:auto;margin:0}
   .pay label.opt:has(input:checked){border-color:var(--accent);outline:2px solid var(--accent);outline-offset:-1px}
   .venmo-field{margin-top:12px;display:none}
+  .addr-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .catalog{display:flex;flex-direction:column;gap:10px}
   .prod{border:1px solid var(--line);border-radius:var(--radius);background:#fff;padding:10px 16px;
     display:flex;align-items:center;justify-content:space-between;gap:16px}
@@ -105,6 +106,34 @@
     </div>
   </div>
 
+  <div class="field">
+    <label>Fulfillment</label>
+    <div class="pay">
+      <label class="opt"><input type="radio" name="fulfill" value="pickup" checked /> Pick-up</label>
+      <label class="opt"><input type="radio" name="fulfill" value="delivery" /> Delivery</label>
+    </div>
+    <div class="deliv-field" id="delivField" style="display:none;margin-top:12px">
+      <div class="field">
+        <label for="address">Street address</label>
+        <input id="address" type="text" autocomplete="street-address" placeholder="123 Main St" />
+      </div>
+      <div class="field">
+        <label for="city">City</label>
+        <input id="city" type="text" autocomplete="address-level2" placeholder="City" />
+      </div>
+      <div class="addr-row">
+        <div class="field">
+          <label for="state">State</label>
+          <input id="state" type="text" autocomplete="address-level1" placeholder="ID" maxlength="2" />
+        </div>
+        <div class="field">
+          <label for="zip">ZIP code</label>
+          <input id="zip" type="text" autocomplete="postal-code" inputmode="numeric" placeholder="83646" />
+        </div>
+      </div>
+    </div>
+  </div>
+
   <hr class="rule" />
   <label>Products</label>
   <p class="hint" style="margin-bottom:12px">Set a quantity for anything you'd like. Leave at 0 to skip. Roasts are 250g bags.</p>
@@ -163,6 +192,12 @@ const venmoField = document.getElementById('venmoField');
 document.querySelectorAll('input[name="pay"]').forEach(r =>
   r.addEventListener('change', () => {
     venmoField.style.display = document.querySelector('input[name="pay"]:checked').value === 'venmo' ? 'block' : 'none';
+  }));
+
+const delivField = document.getElementById('delivField');
+document.querySelectorAll('input[name="fulfill"]').forEach(r =>
+  r.addEventListener('change', () => {
+    delivField.style.display = document.querySelector('input[name="fulfill"]:checked').value === 'delivery' ? 'block' : 'none';
   }));
 
 // quantity <select> from 0..max (0 = default, not ordered)
@@ -295,17 +330,26 @@ function show(msg, ok){ statusEl.className = 'status ' + (ok?'ok':'err'); status
 document.getElementById('send').onclick = async (e) => {
   const btn = e.target;
   const method = document.querySelector('input[name="pay"]:checked').value;
+  const fulfillment = document.querySelector('input[name="fulfill"]:checked').value;
   const payload = {
     rep: REP ? REP.id : null,
     name: document.getElementById('name').value.trim(),
     phone: document.getElementById('phone').value.trim(),
     paymentMethod: method,
     venmoHandle: method === 'venmo' ? document.getElementById('venmo').value.trim() : null,
+    fulfillment,
+    address: fulfillment === 'delivery' ? document.getElementById('address').value.trim() : null,
+    city: fulfillment === 'delivery' ? document.getElementById('city').value.trim() : null,
+    state: fulfillment === 'delivery' ? document.getElementById('state').value.trim() : null,
+    zip: fulfillment === 'delivery' ? document.getElementById('zip').value.trim() : null,
     notes: document.getElementById('notes').value.trim(),
     items: collectLines()
   };
   if(!payload.name || !payload.phone){ show('Please add your name and phone.', false); return; }
   if(method === 'venmo' && !payload.venmoHandle){ show('Please add your Venmo username.', false); return; }
+  if(fulfillment === 'delivery' && (!payload.address || !payload.city || !payload.state || !payload.zip)){
+    show('Please complete your delivery address.', false); return;
+  }
   if(payload.items.length === 0){ show('Add at least one item.', false); return; }
 
   btn.disabled = true; btn.textContent = 'Sending…';
