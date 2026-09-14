@@ -19,13 +19,17 @@ async function nextInvoiceNumber(){
 
 export default async function handler(req, res){
   if(req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { rep, name, phone, paymentMethod, venmoHandle, notes, items } = req.body || {};
+  const { rep, name, phone, paymentMethod, venmoHandle, fulfillment, address, city, state, zip, notes, items } = req.body || {};
 
   const repObj = findRep(rep);
   if(!repObj) return res.status(400).json({ error: 'Invalid or missing rep.' });
   if(!name || !phone) return res.status(400).json({ error: 'Missing name or phone.' });
   if(!['cash','venmo'].includes(paymentMethod)) return res.status(400).json({ error: 'Invalid payment method.' });
   if(paymentMethod === 'venmo' && !venmoHandle) return res.status(400).json({ error: 'Venmo username required.' });
+  const fulfill = fulfillment === 'delivery' ? 'delivery' : 'pickup';
+  if(fulfill === 'delivery' && (!address || !city || !state || !zip)){
+    return res.status(400).json({ error: 'Delivery address is incomplete.' });
+  }
   if(!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'No items in order.' });
 
   // --- validate each line against the catalog and build server-side priced lines ---
@@ -65,6 +69,11 @@ export default async function handler(req, res){
     const { data: order, error: dbErr } = await supabase.from('orders').insert({
       invoice_number: invoiceNumber, rep: repObj.id, customer_name: name, phone,
       payment_method: paymentMethod, venmo_handle: venmoHandle || null,
+      fulfillment: fulfill,
+      address: fulfill === 'delivery' ? address : null,
+      city: fulfill === 'delivery' ? city : null,
+      state: fulfill === 'delivery' ? state : null,
+      zip: fulfill === 'delivery' ? zip : null,
       notes: notes || null, items: lines, units_consumed: consumption,
       total: serverTotal, status: 'pending'
     }).select().single();
@@ -75,7 +84,7 @@ export default async function handler(req, res){
     await supabase.from('orders').update({ invoice_url: invoiceUrl }).eq('id', order.id);
 
     // --- best-effort Discord alert to the business (never blocks the order) ---
-    await notifyBusiness({ order, repObj, name, serverTotal, paymentMethod, invoiceNumber, lines, invoiceUrl });
+    await notifyBusiness({ order, repObj, name, serverTotal, paymentMethod, invoiceNumber, lines, invoiceUrl, fulfill, address, city, state, zip });
 
     return res.status(200).json({ ok:true, invoiceNumber, invoiceUrl });
   }catch(err){
@@ -88,7 +97,7 @@ export default async function handler(req, res){
 // per-rep destination number: REP_SMS_DENNIS / REP_SMS_RYAN / REP_SMS_MIKE (E.164, e.g. +12085551234).
 // If credentials or this rep's number are missing, or the send fails, it logs and returns
 // quietly — the order still succeeds.
-async function notifyBusiness({ order, repObj, name, serverTotal, paymentMethod, invoiceNumber, lines, invoiceUrl }){
+async function notifyBusiness({ order, repObj, name, serverTotal, paymentMethod, invoiceNumber, lines, invoiceUrl, fulfill, address, city, state, zip }){
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_FROM_NUMBER;
@@ -102,10 +111,14 @@ async function notifyBusiness({ order, repObj, name, serverTotal, paymentMethod,
     return `${label} x${l.qty}`;
   }).join('; ');
 
+  const fulfillLine = fulfill === 'delivery'
+    ? `Delivery: ${address}, ${city}, ${state} ${zip}`
+    : `Pick-up`;
+
   const body =
     `New order ${invoiceNumber} (${repObj.name})\n` +
     `${name}\n${itemList}\n` +
-    `$${serverTotal.toFixed(2)} · ${paymentMethod}\n${invoiceUrl}`;
+    `$${serverTotal.toFixed(2)} · ${paymentMethod} · ${fulfillLine}\n${invoiceUrl}`;
 
   try{
     const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {

@@ -49,6 +49,11 @@ export default async function handler(req, res){
   <table><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Amount</th></tr></thead><tbody>${rows}</tbody></table>
   <div class="total"><span>Total due</span><span>${money(o.total)}</span></div>
   <div class="pay">${payInstructions}</div>
+  <p class="notes"><strong>${o.fulfillment === 'delivery' ? 'Delivery to' : 'Fulfillment'}:</strong> ${
+    o.fulfillment === 'delivery'
+      ? esc([o.address, o.city, o.state, o.zip].filter(Boolean).join(', '))
+      : 'Pick-up'
+  }</p>
   ${o.notes ? `<p class="notes"><strong>Notes:</strong> ${esc(o.notes)}</p>` : ''}
   <p class="meta">Status: ${esc(o.status)}</p>
 </div></div></body></html>`;
