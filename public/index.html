@@ -90,20 +90,8 @@
   </div>
   <div class="field">
     <label for="phone">Mobile number</label>
-    <input id="phone" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" />
+    <input id="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(208) 555-1234" />
     <p class="hint">Used for the SMS confirmation and invoice link.</p>
-  </div>
-
-  <div class="field">
-    <label>Payment method</label>
-    <div class="pay">
-      <label class="opt"><input type="radio" name="pay" value="cash" checked /> Cash</label>
-      <label class="opt"><input type="radio" name="pay" value="venmo" /> Venmo</label>
-    </div>
-    <div class="venmo-field field" id="venmoField">
-      <label for="venmo" style="margin-top:12px">Your Venmo username</label>
-      <input id="venmo" type="text" placeholder="@your-handle" />
-    </div>
   </div>
 
   <div class="field">
@@ -112,6 +100,7 @@
       <label class="opt"><input type="radio" name="fulfill" value="pickup" checked /> Pick-up</label>
       <label class="opt"><input type="radio" name="fulfill" value="delivery" /> Delivery</label>
     </div>
+    <p class="hint" id="pickupNote" style="margin-top:8px">Pep Club will coordinate pickup location via text.</p>
     <div class="deliv-field" id="delivField" style="display:none;margin-top:12px">
       <div class="field">
         <label for="address">Street address</label>
@@ -128,15 +117,28 @@
         </div>
         <div class="field">
           <label for="zip">ZIP code</label>
-          <input id="zip" type="text" autocomplete="postal-code" inputmode="numeric" placeholder="83646" />
+          <input id="zip" type="text" autocomplete="postal-code" inputmode="numeric" maxlength="10" placeholder="83646" />
         </div>
       </div>
     </div>
   </div>
 
+  <div class="field">
+    <label>Payment method</label>
+    <div class="pay">
+      <label class="opt" id="cashOpt"><input type="radio" name="pay" value="cash" checked /> Cash</label>
+      <label class="opt"><input type="radio" name="pay" value="venmo" /> Venmo</label>
+    </div>
+    <p class="hint" id="deliveryPayNote" style="margin-top:8px;display:none">Delivery orders are paid via Venmo.</p>
+    <div class="venmo-field field" id="venmoField">
+      <label for="venmo" style="margin-top:12px">Your Venmo username</label>
+      <input id="venmo" type="text" placeholder="@your-handle" />
+    </div>
+  </div>
+
   <hr class="rule" />
   <label>Products</label>
-  <p class="hint" style="margin-bottom:12px">Select bundle (or single) and desired quantity for anything you'd like. Leave at 0 to skip.</p>
+  <p class="hint" style="margin-bottom:12px">Set a quantity for anything you'd like. Leave at 0 to skip. Roasts are 250g bags.</p>
   <div class="catalog" id="catalog"></div>
 
   <div class="total"><span>Total</span><span class="amt" id="total">$0.00</span></div>
@@ -188,17 +190,35 @@ if(REP){
 const catalogEl = document.getElementById('catalog');
 const totalEl = document.getElementById('total');
 const venmoField = document.getElementById('venmoField');
-
-document.querySelectorAll('input[name="pay"]').forEach(r =>
-  r.addEventListener('change', () => {
-    venmoField.style.display = document.querySelector('input[name="pay"]:checked').value === 'venmo' ? 'block' : 'none';
-  }));
-
 const delivField = document.getElementById('delivField');
-document.querySelectorAll('input[name="fulfill"]').forEach(r =>
-  r.addEventListener('change', () => {
-    delivField.style.display = document.querySelector('input[name="fulfill"]:checked').value === 'delivery' ? 'block' : 'none';
-  }));
+const cashOpt = document.getElementById('cashOpt');
+const pickupNote = document.getElementById('pickupNote');
+const deliveryPayNote = document.getElementById('deliveryPayNote');
+const cashRadio = document.querySelector('input[name="pay"][value="cash"]');
+const venmoRadio = document.querySelector('input[name="pay"][value="venmo"]');
+
+function syncVenmoField(){
+  venmoField.style.display = document.querySelector('input[name="pay"]:checked').value === 'venmo' ? 'block' : 'none';
+}
+document.querySelectorAll('input[name="pay"]').forEach(r => r.addEventListener('change', syncVenmoField));
+
+function syncFulfillment(){
+  const isDelivery = document.querySelector('input[name="fulfill"]:checked').value === 'delivery';
+  delivField.style.display = isDelivery ? 'block' : 'none';
+  pickupNote.style.display = isDelivery ? 'none' : 'block';
+  deliveryPayNote.style.display = isDelivery ? 'block' : 'none';
+  if(isDelivery){
+    // delivery = Venmo only: force Venmo, hide the cash option
+    venmoRadio.checked = true;
+    cashRadio.checked = false;
+    cashOpt.style.display = 'none';
+  } else {
+    cashOpt.style.display = '';
+  }
+  syncVenmoField();
+}
+document.querySelectorAll('input[name="fulfill"]').forEach(r => r.addEventListener('change', syncFulfillment));
+syncFulfillment();
 
 // quantity <select> from 0..max (0 = default, not ordered)
 function qtyOptions(max){
@@ -346,9 +366,21 @@ document.getElementById('send').onclick = async (e) => {
     items: collectLines()
   };
   if(!payload.name || !payload.phone){ show('Please add your name and phone.', false); return; }
+  // Phone: require exactly 10 digits (US), ignoring formatting like ()- and spaces.
+  const phoneDigits = payload.phone.replace(/\D/g, '');
+  const normalizedPhone = phoneDigits.length === 11 && phoneDigits[0] === '1' ? phoneDigits.slice(1) : phoneDigits;
+  if(normalizedPhone.length !== 10){ show('Please enter a valid 10-digit phone number.', false); return; }
+  payload.phone = normalizedPhone;  // store clean 10-digit
   if(method === 'venmo' && !payload.venmoHandle){ show('Please add your Venmo username.', false); return; }
-  if(fulfillment === 'delivery' && (!payload.address || !payload.city || !payload.state || !payload.zip)){
-    show('Please complete your delivery address.', false); return;
+  if(fulfillment === 'delivery'){
+    if(!payload.address || !payload.city || !payload.state || !payload.zip){
+      show('Please complete your delivery address.', false); return;
+    }
+    // ZIP: 5 digits, or ZIP+4 (12345 or 12345-6789)
+    if(!/^\d{5}(-\d{4})?$/.test(payload.zip)){ show('Please enter a valid ZIP code (e.g. 83646).', false); return; }
+    // State: 2 letters
+    if(!/^[A-Za-z]{2}$/.test(payload.state)){ show('Please enter a valid 2-letter state (e.g. ID).', false); return; }
+    payload.state = payload.state.toUpperCase();
   }
   if(payload.items.length === 0){ show('Add at least one item.', false); return; }
 
