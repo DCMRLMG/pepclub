@@ -24,11 +24,28 @@ export default async function handler(req, res){
   const repObj = findRep(rep);
   if(!repObj) return res.status(400).json({ error: 'Invalid or missing rep.' });
   if(!name || !phone) return res.status(400).json({ error: 'Missing name or phone.' });
+
+  // Phone: normalize to 10 digits (US), stripping formatting and an optional leading 1.
+  const digits = String(phone).replace(/\D/g, '');
+  const phone10 = digits.length === 11 && digits[0] === '1' ? digits.slice(1) : digits;
+  if(phone10.length !== 10) return res.status(400).json({ error: 'Invalid phone number.' });
+
   if(!['cash','venmo'].includes(paymentMethod)) return res.status(400).json({ error: 'Invalid payment method.' });
-  if(paymentMethod === 'venmo' && !venmoHandle) return res.status(400).json({ error: 'Venmo username required.' });
   const fulfill = fulfillment === 'delivery' ? 'delivery' : 'pickup';
-  if(fulfill === 'delivery' && (!address || !city || !state || !zip)){
-    return res.status(400).json({ error: 'Delivery address is incomplete.' });
+
+  // Delivery must be paid via Venmo.
+  if(fulfill === 'delivery' && paymentMethod !== 'venmo'){
+    return res.status(400).json({ error: 'Delivery orders must be paid via Venmo.' });
+  }
+  if(paymentMethod === 'venmo' && !venmoHandle) return res.status(400).json({ error: 'Venmo username required.' });
+
+  let stateNorm = state, zipNorm = zip;
+  if(fulfill === 'delivery'){
+    if(!address || !city || !state || !zip) return res.status(400).json({ error: 'Delivery address is incomplete.' });
+    if(!/^\d{5}(-\d{4})?$/.test(String(zip).trim())) return res.status(400).json({ error: 'Invalid ZIP code.' });
+    if(!/^[A-Za-z]{2}$/.test(String(state).trim())) return res.status(400).json({ error: 'Invalid state.' });
+    stateNorm = String(state).trim().toUpperCase();
+    zipNorm = String(zip).trim();
   }
   if(!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'No items in order.' });
 
@@ -67,13 +84,13 @@ export default async function handler(req, res){
 
     const invoiceNumber = await nextInvoiceNumber();
     const { data: order, error: dbErr } = await supabase.from('orders').insert({
-      invoice_number: invoiceNumber, rep: repObj.id, customer_name: name, phone,
+      invoice_number: invoiceNumber, rep: repObj.id, customer_name: name, phone: phone10,
       payment_method: paymentMethod, venmo_handle: venmoHandle || null,
       fulfillment: fulfill,
       address: fulfill === 'delivery' ? address : null,
       city: fulfill === 'delivery' ? city : null,
-      state: fulfill === 'delivery' ? state : null,
-      zip: fulfill === 'delivery' ? zip : null,
+      state: fulfill === 'delivery' ? stateNorm : null,
+      zip: fulfill === 'delivery' ? zipNorm : null,
       notes: notes || null, items: lines, units_consumed: consumption,
       total: serverTotal, status: 'pending'
     }).select().single();
