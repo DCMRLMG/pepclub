@@ -5,21 +5,21 @@
 export const CATALOG = {
   // --- single products: each sells as a 5-pack or 10-pack of the base unit ---
   products: [
-    { sku: 'BEAN-ETH', name: 'Retatrutide', unit: '3ml Vial',
+    { sku: 'BEAN-ETH', name: 'Retatrutide', unit: '30mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 300 }, { label: '5-pack', packQty: 5, price: 1400 }, { label: '10-pack', packQty: 10, price: 2500 } ] },
-    { sku: 'BEAN-COL', name: 'BPC-157', unit: '1ml Vial',
+    { sku: 'BEAN-COL', name: 'BPC-157', unit: '10mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] },
-    { sku: 'BEAN-SUM', name: 'TB-500', unit: '1ml Vial',
+    { sku: 'BEAN-SUM', name: 'TB-500', unit: '10mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] },
-    { sku: 'BEAN-KEN', name: 'KPV', unit: '1ml Vial',
+    { sku: 'BEAN-KEN', name: 'KPV', unit: '10mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] }
   ],
 
   // --- kits: a single line item, qty 1..10, that consumes component SKUs from stock ---
   kits: [
-    { sku: 'KIT-1', name: 'Sampler Kit 1: 1x Retatrutide (3ml), 2x BPC-157 (1ml), 2x TB-500 (1ml), 1x KPV', price: 420, maxQty: 1,
+    { sku: 'KIT-1', name: 'Sampler Kit 1: 1x Retatrutide (30mg), 2x BPC-157 (10mg), 2x TB-500 (10mg), 1x KPV (10mg)', price: 420, maxQty: 1,
       components: [ { sku: 'BEAN-ETH', qty: 1 }, { sku: 'BEAN-COL', qty: 2 }, { sku: 'BEAN-SUM', qty: 2 }, { sku: 'BEAN-KEN', qty: 1 } ] },
-    { sku: 'KIT-2', name: 'Sampler Kit 2: 1x Retatrutide (3ml), 2x BPC-157 (1ml), 2x TB-500 (1ml)', price: 395, maxQty: 1,
+    { sku: 'KIT-2', name: 'Sampler Kit 2: 1x Retatrutide (30mg), 2x BPC-157 (10mg), 2x TB-500 (10mg)', price: 395, maxQty: 1,
       components: [ { sku: 'BEAN-ETH', qty: 1 }, { sku: 'BEAN-COL', qty: 2 }, { sku: 'BEAN-SUM', qty: 2 } ] }
   ]
 };
