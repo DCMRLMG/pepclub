@@ -12,15 +12,15 @@ export const CATALOG = {
     { sku: 'BEAN-SUM', name: 'TB-500', unit: '10mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] },
     { sku: 'BEAN-KEN', name: 'KPV', unit: '10mg Vial',
+      variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] },
+    { sku: 'BEAN-GHK', name: 'GHK-cu', unit: '10mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] }
   ],
 
   // --- kits: a single line item, qty 1..10, that consumes component SKUs from stock ---
   kits: [
-    { sku: 'KIT-1', name: 'Sampler Kit 1: 1x Retatrutide (30mg), 2x BPC-157 (10mg), 2x TB-500 (10mg), 1x KPV (10mg)', price: 420, maxQty: 1,
-      components: [ { sku: 'BEAN-ETH', qty: 1 }, { sku: 'BEAN-COL', qty: 2 }, { sku: 'BEAN-SUM', qty: 2 }, { sku: 'BEAN-KEN', qty: 1 } ] },
-    { sku: 'KIT-2', name: 'Sampler Kit 2: 1x Retatrutide (30mg), 2x BPC-157 (10mg), 2x TB-500 (10mg)', price: 395, maxQty: 1,
-      components: [ { sku: 'BEAN-ETH', qty: 1 }, { sku: 'BEAN-COL', qty: 2 }, { sku: 'BEAN-SUM', qty: 2 } ] }
+    { sku: 'KIT-1', name: 'Sampler Kit 1: 1x Retatrutide (30mg), 2x BPC-157 (10mg), 2x TB-500 (10mg)', price: 420, maxQty: 1,
+      components: [ { sku: 'BEAN-ETH', qty: 1 }, { sku: 'BEAN-COL', qty: 2 }, { sku: 'BEAN-SUM', qty: 2 }, { sku: 'BEAN-KEN', qty: 1 } ] }
   ]
 };
 
