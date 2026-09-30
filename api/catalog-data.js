@@ -5,15 +5,15 @@
 export const CATALOG = {
   // --- single products: each sells as a 5-pack or 10-pack of the base unit ---
   products: [
-    { sku: 'BEAN-ETH', name: 'Retatrutide', unit: '30mg Vial',
+    { sku: 'BEAN-ETH', name: 'Retatrutide: 30mg', unit: '30mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 300 }, { label: '5-pack', packQty: 5, price: 1400 }, { label: '10-pack', packQty: 10, price: 2500 } ] },
-    { sku: 'BEAN-COL', name: 'BPC-157', unit: '10mg Vial',
+    { sku: 'BEAN-COL', name: 'BPC-157: 10mg', unit: '10mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] },
-    { sku: 'BEAN-SUM', name: 'TB-500', unit: '10mg Vial',
+    { sku: 'BEAN-SUM', name: 'TB-500: 10mg', unit: '10mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] },
-    { sku: 'BEAN-KEN', name: 'KPV', unit: '10mg Vial',
+    { sku: 'BEAN-KEN', name: 'KPV: 10mg', unit: '10mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] },
-    { sku: 'BEAN-GHK', name: 'GHK-cu', unit: '10mg Vial',
+    { sku: 'BEAN-GHK', name: 'GHK-cu: 30mg', unit: '10mg Vial',
       variants: [ { label: 'Single', packQty: 1, price: 40 }, { label: '5-pack', packQty: 5, price: 175 }, { label: '10-pack', packQty: 10, price: 150 } ] }
   ],
 
